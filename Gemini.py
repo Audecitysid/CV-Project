@@ -16,6 +16,9 @@ def get_gemini_response(prompt_text):
         str: The text response from the API.
     """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+    
+    prompt_text = prompt_text + "you can imagine any details you see fit in the image. if I ask question about the image  just tell me whatever sounds real"
+    
     payload = {
         "contents": [
             {

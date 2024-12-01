@@ -6,7 +6,7 @@ import torch
 def get_image_caption(image_path):
     """
     Generates a short caption for the provided image.
-
+ 
     Args:
         image_path (str): The path to the image file.
 
@@ -50,7 +50,7 @@ def detect_objects(image_path):
     # convert outputs (bounding boxes and class logits) to COCO API
     # let's only keep detections with score > 0.9
     target_sizes = torch.tensor([image.size[::-1]])
-    results = processor.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.9)[0]
+    results = processor.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.1)[0]
 
     detections = ""
     for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
@@ -62,6 +62,12 @@ def detect_objects(image_path):
 
 
 if __name__ == '__main__':
-    image_path = '/home/phillip/Desktop/todays_tutorial/52_langchain_ask_questions_video/code/test.jpg'
+    image_path = 'D:/Screenshots/Desktop Wallpapers/peach-goma-spring-picnic-desktop-wallpaper-kawaii-hoshi.jpg'
+
+#""
+    
+    
+    caption = get_image_caption(image_path)
+    
     detections = detect_objects(image_path)
-    print(detections)
+    print( caption , detections)

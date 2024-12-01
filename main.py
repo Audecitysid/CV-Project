@@ -1,65 +1,53 @@
+import os
 from tempfile import NamedTemporaryFile
-
 import streamlit as st
-from langchain.agents import initialize_agent
-from langchain.chat_models import ChatOpenAI
-from langchain.chains.conversation.memory import ConversationBufferWindowMemory
-
 from tools import ImageCaptionTool, ObjectDetectionTool
+from Gemini import get_gemini_response
 
+# Initialize tools
+image_caption_tool = ImageCaptionTool()
+object_detection_tool = ObjectDetectionTool()
 
-##############################
-### initialize agent #########
-##############################
-tools = [ImageCaptionTool(), ObjectDetectionTool()]
-
-conversational_memory = ConversationBufferWindowMemory(
-    memory_key='chat_history',
-    k=5,
-    return_messages=True
-)
-
-llm = ChatOpenAI(
-    openai_api_key='',
-    temperature=0,
-    model_name="gpt-3.5-turbo"
-)
-
-agent = initialize_agent(
-    agent="chat-conversational-react-description",
-    tools=tools,
-    llm=llm,
-    max_iterations=5,
-    verbose=True,
-    memory=conversational_memory,
-    early_stopping_method='generate'
-)
-
-# set title
-st.title('Ask a question to an image')
-
-# set header
+# Streamlit App
+st.title("Ask a Question About an Image")
 st.header("Please upload an image")
 
-# upload file
+# Upload file
 file = st.file_uploader("", type=["jpeg", "jpg", "png"])
 
 if file:
-    # display image
+    # Save the uploaded file to a permanent path
+    upload_folder = "uploads"  # You can change this path as needed
+    os.makedirs(upload_folder, exist_ok=True)  # Create the folder if it doesn't exist
+    file_path = os.path.join(upload_folder, file.name)
+    
+    with open(file_path, "wb") as f:
+        f.write(file.getbuffer())
+    
+    # Display the uploaded image
     st.image(file, use_column_width=True)
 
-    # text input
-    user_question = st.text_input('Ask a question about your image:')
+    # Process the uploaded image
+    with st.spinner("Generating image captions..."):
+        image_caption = image_caption_tool.run(file_path)
+    st.write("Image Caption:", image_caption)
 
-    ##############################
-    ### compute agent response ###
-    ##############################
-    with NamedTemporaryFile(dir='.') as f:
-        f.write(file.getbuffer())
-        image_path = f.name
+    with st.spinner("Detecting objects in the image..."):
+        object_detection = object_detection_tool.run(file_path)
+    st.write("Objects Detected:", object_detection)
 
-        # write agent response
-        if user_question and user_question != "":
-            with st.spinner(text="In progress..."):
-                response = agent.run('{}, this is the image path: {}'.format(user_question, image_path))
-                st.write(response)
+    # Get user question
+    user_question = st.text_input("Ask a question about your image:")
+
+    if user_question:
+        # Combine tool outputs and user question into a prompt
+        prompt = (
+            f"{user_question}\n\n"
+            f"Image Caption: {image_caption}\n"
+            f"Objects Detected: {object_detection}\n"
+        )
+
+        # Call Gemini manually
+        with st.spinner("Getting response from Gemini..."):
+            response = get_gemini_response(prompt)
+        st.write("Gemini's Response:", response)
