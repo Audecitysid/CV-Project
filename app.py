@@ -51,3 +51,4 @@ if file:
         with st.spinner("Getting response from Gemini..."):
             response = get_gemini_response(prompt)
         st.write("Gemini's Response:", response)
+
